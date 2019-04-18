@@ -47,6 +47,36 @@ Status ERROR - Not all remote host(s) took the update
 EOF
 }
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  logger
+#   DESCRIPTION:  Log to syslog and echo state
+#    PARAMETERS:  globals
+#       RETURNS:  stdout
+#-------------------------------------------------------------------------------
+logger () {
+
+}
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  webPush
+#   DESCRIPTION:  Use curl and POST to a website
+#    PARAMETERS:  globals
+#       RETURNS:  logger and stdout before exit
+#-------------------------------------------------------------------------------
+webPush () {
+
+}
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  hostSsh
+#   DESCRIPTION:  ssh to remote hosts and update fail2ban
+#    PARAMETERS:  globals
+#       RETURNS:  logger and stdout before exit
+#-------------------------------------------------------------------------------
+hostSsh() {
+
+}
+
 # Set sane defaults
 JAIL='recdive'
 CFG="./ipList.cfg"
@@ -67,4 +97,22 @@ do
   esac
 done
 
+# Confirm we have the information we need
+if [[ -e ${CFG} ]];then
+  . ${CFG}
+else
+  echo "Status FATAL - the IP configuration file is manditory, and not found"; exit 2
+fi
+
+if [[ -z ${IP} ]]; then
+  echo "Status FATAL - an IP address is manditory"; exit 2
+fi
+
+# Decide what we are going to update
+if [[ "${WEB}" = "true" ]];then
+  webPush
+else
+  hostSsh
+fi
+exit 0
 
