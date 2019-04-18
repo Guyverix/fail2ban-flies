@@ -1,2 +1,2 @@
 # fail2ban-flies
-scripts to have jails propagate to remote hosts
+scripts to have jailed IP addresses propagate to remote hosts
