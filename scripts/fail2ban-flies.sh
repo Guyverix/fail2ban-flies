@@ -5,9 +5,9 @@
 #
 #         USAGE: ./fail2ban-flies.sh options
 #
-#   DESCRIPTION: 
-#
-#  REQUIREMENTS: ---
+#   DESCRIPTION: Update remote fail2ban instances either directly or
+#                indirectly
+#  REQUIREMENTS: fail2ban, ssh, sudo
 #        AUTHOR: Christopher Hubbard (CSH), guyverix@yahoo.com
 #  ORGANIZATION: Personal
 #       CREATED: 04/18/2019 03:50:41 PM
