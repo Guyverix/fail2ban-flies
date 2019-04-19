@@ -47,6 +47,25 @@ Status ERROR - Not all remote host(s) took the update
 EOF
 }
 
+#===  FUNCTION  ================================================================
+#          NAME:  verify_deps
+#   DESCRIPTION:  Check that all binary files are available to be used
+#    PARAMETERS:  None.  This is standalone.  Changes occur on case by case
+#       RETURNS:  none
+#===============================================================================
+verify_deps() {
+# needed="xmllint curl w3m snmptrap cut egrep expr"
+needed="ssh curl"
+for i in `echo $needed`
+do
+  type $i >/dev/null 2>&1
+  if [ $? -eq 1 ]; then
+    echo "Status FATAL - missing manditory component: $i"; exit 2
+  fi
+done
+}
+
+
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  logger
 #   DESCRIPTION:  Log to syslog and echo state
@@ -98,6 +117,8 @@ do
 done
 
 # Confirm we have the information we need
+verify_deps
+
 if [[ -e ${CFG} ]];then
   . ${CFG}
 else
