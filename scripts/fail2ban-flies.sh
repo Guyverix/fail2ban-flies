@@ -54,10 +54,18 @@ EOF
 #       RETURNS:  none
 #===============================================================================
 verify_deps() {
-# needed="xmllint curl w3m snmptrap cut egrep expr"
-needed="ssh curl"
-for i in `echo $needed`
-do
+if [[ "${AUTH}" != "key" ]] && [[ "${WEB}" != "true" ]];then
+  needed="ssh sshpass"
+elif [[ "${WEB}" == "true" ]];then
+  needed="curl"
+else
+  # We cant tell what we might need check everything
+  needed="ssh curl sshpass"
+fi
+
+# Loop through all the binaries and confirm they exist
+# Unsure if this will work on a Mac properly or not
+for i in `echo $needed`; do
   type $i >/dev/null 2>&1
   if [ $? -eq 1 ]; then
     echo "Status FATAL - missing manditory component: $i"; exit 2
@@ -68,12 +76,69 @@ done
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  logger
-#   DESCRIPTION:  Log to syslog and echo state
+#   DESCRIPTION:  Log to logfile and echo state
 #    PARAMETERS:  globals
 #       RETURNS:  stdout
 #-------------------------------------------------------------------------------
 logger () {
+local MESSAGE=${1}
+# "Message" "ERR, or UOW" "Context id"
+   if [ -z ${2} ];then
+      # If there is no var 2, then this is NOT an error or UOW of some kind.
+      local LOGGING="INFO"
+      local CONTEXT1=${RANDOM}
+   else
+      local LOGGING="${2}"
+      if [ -z ${3} ];then
+         local CONTEXT1=${RANDOM}
+      else
+         local CONTEXT1="${3}"
+      fi
+   fi
+# canonicaldirname does NOT work on Mac.  Find a better option
+LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
+touch ${LOGFILE}
+chmod 664 ${LOGFILE}
 
+local APP_NAME=`echo $0 | awk -F'/' '{print $NF}'`
+#echo "[[\"`date -u +%FT%H:%M:%S`\", \"Event\", \"\", \"${LOGGING}\", \"`hostname`\", \"${APP_NAME}\", \"$$\", \"0\", \"${CONTEXT1}\", ,\"OPS\", \"${APP_NAME}\"], {\"Event\":\"${MESSAGE}\"}]" >> ${LOGFILE}
+echo "\"$(date +%s%N)\": [[\"$(date -u +%FT%H:%M:%S)\", \"${LOGGING}\", \"$(hostname)\", \"${APP_NAME}\", \"$$\", \"${CONTEXT1}\"], {\"Event\":\"${MESSAGE}\"}]," >> ${LOGFILE}
+}
+
+# Begin the log file so JSON is vaild
+beginlog() {
+LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
+touch ${LOGFILE}
+chmod 664 ${LOGFILE}
+echo '{' >> ${LOGFILE}
+}
+
+# Close the JSON properly
+endlog() {
+LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
+touch ${LOGFILE}
+chmod 664 ${LOGFILE}
+local MESSAGE=${1}
+# "Message" "ERR, or UOW" "Context id"
+   if [ -z ${2} ];then
+      # If there is no var 2, then this is NOT an error or UOW of some kind.
+      local LOGGING="INFO"
+      local CONTEXT1=${RANDOM}
+   else
+      local LOGGING="${2}"
+      if [ -z ${3} ];then
+         local CONTEXT1=${RANDOM}
+      else
+         local CONTEXT1="${3}"
+      fi
+   fi
+   echo "\"$(date +%s%N)\": [[\"$(date -u +%FT%H:%M:%S)\", \"${LOGGING}\", \"$(hostname)\", \"${APP_NAME}\", \"$$\", \"${CONTEXT1}\"], {\"Event\":\"${MESSAGE}\"}]" >> ${LOGFILE}
+echo '}' >> ${LOGFILE}
+}
+
+# Fatal errors follow the endlog function
+fatal() {
+endlog $[@]
 }
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -93,7 +158,16 @@ webPush () {
 #       RETURNS:  logger and stdout before exit
 #-------------------------------------------------------------------------------
 hostSsh() {
-
+# Yes, this could be done much nicer, but I want it clear what is being done for V1
+  if [[ "${AUTH}" == "key" ]]; then
+    for REMOTE in ${REMOTE_HOST} ; do
+      ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}"
+    done
+  else
+    for REMOTE in ${REMOTE_HOST} ; do
+      sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}"
+    done
+  fi
 }
 
 # Set sane defaults
@@ -101,6 +175,8 @@ JAIL='recdive'
 CFG="./ipList.cfg"
 WEB='false'
 UNBAN='false'
+USER=$(whoami)
+SYSLOG="true"
 
 while getopts "hxUWJ:I:C:" OPTION
 do
@@ -129,11 +205,28 @@ if [[ -z ${IP} ]]; then
   echo "Status FATAL - an IP address is manditory"; exit 2
 fi
 
+# Begin logging
+if [[ ${SYSLOG} ]]; then
+  logger "beginning fail2ban-flies push"
+else
+  beginLog
+fi
+
 # Decide what we are going to update
 if [[ "${WEB}" = "true" ]];then
   webPush
 else
   hostSsh
 fi
+
+# Update our logs
+if [[ ${SYSLOG} ]]; then
+  logger "ending fail2ban-flies push"
+else
+  endLog
+fi
+
 exit 0
+
+
 
