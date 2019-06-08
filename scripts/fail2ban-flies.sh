@@ -75,12 +75,12 @@ done
 
 
 #---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  logger
+#          NAME:  local_logger
 #   DESCRIPTION:  Log to logfile and echo state
 #    PARAMETERS:  globals
 #       RETURNS:  stdout
 #-------------------------------------------------------------------------------
-logger () {
+local_logger () {
 local MESSAGE=${1}
 # "Message" "ERR, or UOW" "Context id"
    if [ -z ${2} ];then
@@ -209,7 +209,9 @@ fi
 if [[ ${SYSLOG} ]]; then
   logger "beginning fail2ban-flies push"
 else
+  # beginLog does not take args
   beginLog
+  local_logger "beginning fail2ban-flies push" "DEBUG"
 fi
 
 # Decide what we are going to update
@@ -223,7 +225,7 @@ fi
 if [[ ${SYSLOG} ]]; then
   logger "ending fail2ban-flies push"
 else
-  endLog
+  endLog "ending fail2ban-flies push"
 fi
 
 exit 0
