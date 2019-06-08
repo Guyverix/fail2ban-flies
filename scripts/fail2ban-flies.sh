@@ -132,8 +132,9 @@ local MESSAGE=${1}
          local CONTEXT1="${3}"
       fi
    fi
+   local APP_NAME=`echo $0 | awk -F'/' '{print $NF}'`
    echo "\"$(date +%s%N)\": [[\"$(date -u +%FT%H:%M:%S)\", \"${LOGGING}\", \"$(hostname)\", \"${APP_NAME}\", \"$$\", \"${CONTEXT1}\"], {\"Event\":\"${MESSAGE}\"}]" >> ${LOGFILE}
-echo '}' >> ${LOGFILE}
+   echo '}' >> ${LOGFILE}
 }
 
 # Fatal errors follow the endlog function
@@ -148,6 +149,21 @@ endlog $[@]
 #       RETURNS:  logger and stdout before exit
 #-------------------------------------------------------------------------------
 webPush () {
+# This will end up in cfg file later
+local VERS='get'
+if [[ ${VERS} == "get" ]];then
+  # GET VERSION
+  local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -s -L "${WEB}?jail=${JAIL}&ip=${IP}&unban=${UNBAN}")
+else
+  # POST VERSION
+  local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"unban\": \"${UNBAN}\"}" ${HOOK_URL})
+fi
+# Log the results of our work
+if [[ $? -gt 0 ]]; then
+  if [[ ${SYSLOG} ]]; then logger "${WEB_PUSH}" ; else local_logger "${WEB_PUSH}" "ERROR" ; fi
+else
+  if [[ ${SYSLOG} ]]; then logger "Pushed to webhost successfully" ; else local_logger "Pushed to webhost successfully" "DEBUG" ; fi
+fi
 
 }
 
@@ -161,11 +177,21 @@ hostSsh() {
 # Yes, this could be done much nicer, but I want it clear what is being done for V1
   if [[ "${AUTH}" == "key" ]]; then
     for REMOTE in ${REMOTE_HOST} ; do
-      ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}"
+      SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}")
+      if [[ $? -gt 0 ]]; then
+        if [[ ${SYSLOG} ]]; then logger "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+      else
+        if [[ ${SYSLOG} ]]; then logger "Updated ${REMOTE} successfully" ; else local_logger "Updated ${REMOTE} host successfully" "DEBUG" ; fi
+      fi
     done
   else
     for REMOTE in ${REMOTE_HOST} ; do
-      sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}"
+      SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}")
+      if [[ $? -gt 0 ]]; then
+        if [[ ${SYSLOG} ]]; then logger "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+      else
+        if [[ ${SYSLOG} ]]; then logger "Updated ${REMOTE} successfully" ; else local_logger "Updated ${REMOTE} host successfully" "DEBUG" ; fi
+      fi
     done
   fi
 }
