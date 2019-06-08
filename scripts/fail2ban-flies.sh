@@ -160,9 +160,9 @@ else
 fi
 # Log the results of our work
 if [[ $? -gt 0 ]]; then
-  if [[ ${SYSLOG} ]]; then logger "${WEB_PUSH}" ; else local_logger "${WEB_PUSH}" "ERROR" ; fi
+  if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${WEB_PUSH}" ; else local_logger "${WEB_PUSH}" "ERROR" ; fi
 else
-  if [[ ${SYSLOG} ]]; then logger "Pushed to webhost successfully" ; else local_logger "Pushed to webhost successfully" "DEBUG" ; fi
+  if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Pushed to webhost successfully" ; else local_logger "Pushed to webhost successfully" "DEBUG" ; fi
 fi
 
 }
@@ -179,18 +179,18 @@ hostSsh() {
     for REMOTE in ${REMOTE_HOST} ; do
       SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}")
       if [[ $? -gt 0 ]]; then
-        if [[ ${SYSLOG} ]]; then logger "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
       else
-        if [[ ${SYSLOG} ]]; then logger "Updated ${REMOTE} successfully" ; else local_logger "Updated ${REMOTE} host successfully" "DEBUG" ; fi
+        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully" ; else local_logger "Updated ${REMOTE} host successfully" "DEBUG" ; fi
       fi
     done
   else
     for REMOTE in ${REMOTE_HOST} ; do
       SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}")
       if [[ $? -gt 0 ]]; then
-        if [[ ${SYSLOG} ]]; then logger "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
       else
-        if [[ ${SYSLOG} ]]; then logger "Updated ${REMOTE} successfully" ; else local_logger "Updated ${REMOTE} host successfully" "DEBUG" ; fi
+        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully" ; else local_logger "Updated ${REMOTE} host successfully" "DEBUG" ; fi
       fi
     done
   fi
@@ -233,7 +233,7 @@ fi
 
 # Begin logging
 if [[ ${SYSLOG} ]]; then
-  logger "beginning fail2ban-flies push"
+  logger -t fail2ban-flies "beginning fail2ban-flies push"
 else
   # beginLog does not take args
   beginLog
@@ -249,7 +249,7 @@ fi
 
 # Update our logs
 if [[ ${SYSLOG} ]]; then
-  logger "ending fail2ban-flies push"
+  logger -t fail2ban-flies "ending fail2ban-flies push"
 else
   endLog "ending fail2ban-flies push"
 fi
