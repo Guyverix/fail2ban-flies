@@ -256,7 +256,7 @@ testHosts() {
 # Set sane defaults
 #JAIL='fail2ban-flies'
 JAIL='recidive'
-CFG="./ipList.cfg"
+CFG="${samedirname}/ipList.cfg"
 WEB='false'
 UNBAN=''
 USER=$(whoami)
