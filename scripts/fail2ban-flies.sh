@@ -40,6 +40,8 @@ Options:
 -W  Run in HTTP mode
 -C  Config file we are using (if not ./ipList.cfg)
 -P  Password passed via commandline *(not a good idea kids)
+-S  disable using syslog
+-T  test via ssh if the jail exists or not
 
 Example:
 $0 -J ssh -I 8.8.8.8 
@@ -186,21 +188,32 @@ hostSsh() {
 # Yes, this could be done much nicer, but I want it clear what is being done for V1
   if [[ "${AUTH}" == key ]]; then
     for REMOTE in ${REMOTE_IP} ; do
-      logger "Using address ${REMOTE}" "DEBUG"
-      SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
-      if [[ $? -gt 0 ]]; then
-        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+      # validate we are not attempting a localhost update
+      if [[ "${LOCALIP}" =~ ${REMOTE} ]]; then
+        local_logger "Status found local IP address match between ${REMOTE} and ${LOCALIP}.  Ignoring this update" "DEBUG"
       else
-        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully to ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
+        local_logger "Using address ${REMOTE}" "DEBUG"
+        SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
+        if [[ $(echo "${SSH}" | grep -c "NOK") -gt 0 ]]; then
+          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+        else
+          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully to ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
+        fi
       fi
     done
   else
     for REMOTE in ${REMOTE_IP} ; do
-      SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
-      if [[ $? -gt 0 ]]; then
-        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+      # validate we are not attempting a localhost update
+      if [[ "${LOCALIP}" =~ ${REMOTE} ]]; then
+        local_logger "Status found local IP address match between ${REMOTE} and ${LOCALIP}.  Ignoring this update" "DEBUG"
       else
-        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfullyto ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
+        local_logger "Using address ${REMOTE}" "DEBUG"
+        SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
+        if [[ $(echo "${SSH}" | grep -c "NOK") -gt 0 ]]; then
+          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+        else
+          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfullyto ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
+        fi
       fi
     done
   fi
@@ -215,12 +228,17 @@ hostSsh() {
 testHosts() {
   if [[ "${AUTH}" == key ]]; then
     for REMOTE in ${REMOTE_IP} ; do
-      logger "Using address ${REMOTE}" "DEBUG"
-      SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client status | grep -c ${JAIL} ")
-      if [[ ${SSH} -lt 1 ]]; then
-        echo "Failure: failed to find jail ${JAIL} on remote host ${REMOTE}"
+      if [[ "${LOCALIP}" =~ ${REMOTE} ]]; then
+        local_logger "Status found local IP address match between ${REMOTE} and ${LOCALIP}.  Ignoring this update" "DEBUG"
+        echo "Found local IP address in checks.  Ignoring ${REMOTE}"
       else
-        echo "Success: found jail ${JAIL} on remote host ${REMOTE}"
+        local_logger "Using address ${REMOTE}" "DEBUG"
+        SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client status | grep -c ${JAIL} ")
+        if [[ ${SSH} -lt 1 ]]; then
+          echo "Failure: failed to find jail ${JAIL} on remote host ${REMOTE}"
+        else
+          echo "Success: found jail ${JAIL} on remote host ${REMOTE}"
+        fi
       fi
     done
   else
@@ -266,6 +284,10 @@ done
 # Confirm we have the information we need
 verify_deps
 
+# Find our local machine IP address now
+LOCALIP=$(hostname -I)
+
+# Load the configuration file
 if [[ -e ${CFG} ]];then
   . ${CFG}
 else
