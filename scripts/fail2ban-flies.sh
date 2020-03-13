@@ -194,8 +194,8 @@ hostSsh() {
       else
         local_logger "Using address ${REMOTE}" "DEBUG"
         SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
-        if [[ $(echo "${SSH}" | grep -c "NOK") -gt 0 ]]; then
-          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+        if [[ $(echo "${SSH}" | grep -c "NOK\|Sorry") -gt 0 ]]; then
+          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "FAILURE: ${SSH} remote: ${REMOTE}" ; else local_logger "FAILURE: ${SSH} remote: ${REMOTE}" "ERROR" ; fi
         else
           if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully to ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
         fi
@@ -209,8 +209,8 @@ hostSsh() {
       else
         local_logger "Using address ${REMOTE}" "DEBUG"
         SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
-        if [[ $(echo "${SSH}" | grep -c "NOK") -gt 0 ]]; then
-          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
+        if [[ $(echo "${SSH}" | grep -c "NOK\|Sorry") -gt 0 ]]; then
+          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "FAILURE: ${SSH} remote: ${REMOTE}" ; else local_logger "FAILURE: ${SSH} remote: ${REMOTE}" "ERROR" ; fi
         else
           if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfullyto ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
         fi
