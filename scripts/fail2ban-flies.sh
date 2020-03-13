@@ -206,7 +206,37 @@ hostSsh() {
   fi
 }
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  testHosts
+#   DESCRIPTION:  ssh to remote hosts and vailate they can work
+#    PARAMETERS:  globals
+#       RETURNS:  logger and stdout before exit
+#-------------------------------------------------------------------------------
+testHosts() {
+  if [[ "${AUTH}" == key ]]; then
+    for REMOTE in ${REMOTE_IP} ; do
+      logger "Using address ${REMOTE}" "DEBUG"
+      SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client status | grep -c ${JAIL} ")
+      if [[ ${SSH} -lt 1 ]]; then
+        echo "Failure: failed to find jail ${JAIL} on remote host ${REMOTE}"
+      else
+        echo "Success: found jail ${JAIL} on remote host ${REMOTE}"
+      fi
+    done
+  else
+    for REMOTE in ${REMOTE_IP} ; do
+      SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client status | grep -c ${JAIL}")
+      if [[ ${SSH} -lt 1 ]]; then
+        echo "Failure: failed to find jail ${JAIL} on remote host ${REMOTE}"
+      else
+        echo "Success: found jail ${JAIL} on remote host ${REMOTE}"
+      fi
+    done
+  fi
+}
+
 # Set sane defaults
+#JAIL='fail2ban-flies'
 JAIL='recidive'
 CFG="./ipList.cfg"
 WEB='false'
@@ -214,8 +244,9 @@ UNBAN=''
 USER=$(whoami)
 SYSLOG="true"
 PASS=''
+TEST='false'
 
-while getopts "hxUWSJ:I:C:P:" OPTION
+while getopts "hxUWTSJ:I:C:P:" OPTION
 do
   case ${OPTION} in
     h) usage; exit 0    ;;
@@ -226,6 +257,7 @@ do
     J) JAIL="${OPTARG}" ;;
     I) IP="${OPTARG}"   ;;
     S) SYSLOG="false"   ;;
+    T) TEST='true'      ;;
     C) CFG="${OPTARG}"  ;;
     *) echo "Status FATAL - Unexpected argument given $@"; exit 2 ;;
   esac
@@ -240,8 +272,14 @@ else
   echo "Status FATAL - the IP configuration file is manditory, and not found"; exit 2
 fi
 
-if [[ -z ${IP} ]]; then
+if [[ -z ${REMOTE_IP} ]]; then
   echo "Status FATAL - an IP address is manditory"; exit 2
+fi
+
+# Testing validation here
+if [[ ${TEST} = true ]];then
+  testHosts
+  exit 0
 fi
 
 # Begin logging

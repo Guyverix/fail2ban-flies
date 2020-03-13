@@ -1,0 +1,8 @@
+[fail2ban-flies]
+enabled   = true
+filter    = fail2ban-flies
+logpath   = /var/log/fail2ban-flies.log
+maxretry  = 1
+bantime   = 2592000 ;1 month
+findtime  = 15552000 ;6 months
+
