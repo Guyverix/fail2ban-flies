@@ -1,0 +1,11 @@
+It is important to note that there is the possibility of causing 
+a storm from all the hosts forwarding the new ban to other hosts
+We in general NEVER want this to happen.
+
+The way to do this is to make sure whatever jail is used does
+not have the script defined in its action.  We want to use a jail
+that is not part of the default flow.
+
+jail.local example listed uses its own action to make sure
+that this new jail will not rebroadcast when it receives 
+a ban against an IP address
