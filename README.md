@@ -20,3 +20,5 @@ Initial commits have been done with the basic logic for the bash script, however
 The logic is now in place for verification of sshpass existing, as that will be necessary when using a password based login.  I am unsure if Mac's have the same script available but will cross that bridge when I come to it.
 
 There is a basic web post curl statement using GET as well as a second one for POST.  The intial PHP version will likely only support GET since it is simpler and we are not dealing with sensitive information.
+
+Testing is showing that while this is a valid way of blocking the IP addresses, it can and liekly would cause a broadcast storm where the first block forwards to the other hosts who then forward on to the other hosts.  This must never happen.  I am going to test a specific jail just for flies and see if this will make the system behave in a sane fashion.
