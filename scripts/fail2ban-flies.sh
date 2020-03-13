@@ -37,6 +37,7 @@ Options:
 -U  Unban an IP from Jail
 -W  Run in HTTP mode
 -C  Config file we are using (if not ./ipList.cfg)
+-P  Password passed via commandline *(not a good idea kids)
 
 Example:
 $0 -J ssh -I 8.8.8.8 
@@ -151,12 +152,18 @@ endlog $[@]
 webPush () {
 # This will end up in cfg file later
 local VERS='get'
+if [[ ${UNBAN} = un ]];then
+  local DEBAN='true'
+else
+  local DEBAN='false'
+fi
+
 if [[ ${VERS} == "get" ]];then
   # GET VERSION
-  local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -s -L "${WEB}?jail=${JAIL}&ip=${IP}&unban=${UNBAN}")
+  local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -s -L "${WEB}?jail=${JAIL}&ip=${IP}&unban=${DEBAN}")
 else
   # POST VERSION
-  local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"unban\": \"${UNBAN}\"}" ${HOOK_URL})
+  local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"unban\": \"${DEBAN}\"}" ${HOOK_URL})
 fi
 # Log the results of our work
 if [[ $? -gt 0 ]]; then
@@ -175,44 +182,48 @@ fi
 #-------------------------------------------------------------------------------
 hostSsh() {
 # Yes, this could be done much nicer, but I want it clear what is being done for V1
-  if [[ "${AUTH}" == "key" ]]; then
-    for REMOTE in ${REMOTE_HOST} ; do
-      SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}")
+  if [[ "${AUTH}" == key ]]; then
+    for REMOTE in ${REMOTE_IP} ; do
+      logger "Using address ${REMOTE}" "DEBUG"
+      SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
       if [[ $? -gt 0 ]]; then
         if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
       else
-        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully" ; else local_logger "Updated ${REMOTE} host successfully" "DEBUG" ; fi
+        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully to ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
       fi
     done
   else
-    for REMOTE in ${REMOTE_HOST} ; do
-      SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} banip ${IP}")
+    for REMOTE in ${REMOTE_IP} ; do
+      SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
       if [[ $? -gt 0 ]]; then
         if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${SSH}" ; else local_logger "${SSH}" "ERROR" ; fi
       else
-        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully" ; else local_logger "Updated ${REMOTE} host successfully" "DEBUG" ; fi
+        if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfullyto ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
       fi
     done
   fi
 }
 
 # Set sane defaults
-JAIL='recdive'
+JAIL='recidive'
 CFG="./ipList.cfg"
 WEB='false'
-UNBAN='false'
+UNBAN=''
 USER=$(whoami)
 SYSLOG="true"
+PASS=''
 
-while getopts "hxUWJ:I:C:" OPTION
+while getopts "hxUWSJ:I:C:P:" OPTION
 do
   case ${OPTION} in
     h) usage; exit 0    ;;
     x) export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'; set -x ;;
-    U) UNBAN='true'     ;;
+    U) UNBAN='un'       ;;
     W) WEB='true'       ;;
+    P) PASS="${OPTARG}" ;;
     J) JAIL="${OPTARG}" ;;
     I) IP="${OPTARG}"   ;;
+    S) SYSLOG="false"   ;;
     C) CFG="${OPTARG}"  ;;
     *) echo "Status FATAL - Unexpected argument given $@"; exit 2 ;;
   esac
@@ -242,8 +253,10 @@ fi
 
 # Decide what we are going to update
 if [[ "${WEB}" = "true" ]];then
+  local_logger "fail2ban-flies using web services" "DEBUG"
   webPush
 else
+  local_logger "fail2ban-flies using ssh services" "DEBUG"
   hostSsh
 fi
 
