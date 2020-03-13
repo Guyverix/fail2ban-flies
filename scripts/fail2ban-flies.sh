@@ -11,10 +11,12 @@
 #        AUTHOR: Christopher Hubbard (CSH), guyverix@yahoo.com
 #  ORGANIZATION: Personal
 #       CREATED: 04/18/2019 03:50:41 PM
+#       VERSION: 0.0.1
+#      REVISION: Cathy
 #===============================================================================
 
-
 # set -o nounset  # Treat unset variables as an error
+# Remember that Mac does not like these.  Disable if they cause trouble
 canonicalpath=`readlink -f $0`
 canonicaldirname=`dirname ${canonicalpath}`/..
 samedirname=`dirname ${canonicalpath}`
