@@ -1,0 +1,4 @@
+The file in here is needed so that fail2ban knows how to call our script.
+
+Make sure that if you are not using /opt that the path is updated in the conf file to 
+where your flies script lives.
