@@ -1,0 +1,32 @@
+Investigating a dumb webserver with auth as an alternate to ssh
+
+Python webserver from:
+https://gist.github.com/fxsjy/5465353
+
+This is a python2 gist
+
+This is python3 with SSL support
+https://github.com/tianhuil/SimpleHTTPAuthServer
+
+spitball logic:
+http port 19999 default
+curl to server with GET opts in URL and auth in URL
+KISS!  Dont bother with post.  No real point.
+
+Internal to python call an os exec and just like the ssh version
+run the fail2ban-client and ban/unban the IP address from the jail
+
+
+Notes:
+Daemon should run as root so no sudo needed for exec command
+systemd control, and only inside systemd will the U/P reside, so only sudoers
+would see it anyway.  Only a single login is actually needed for this
+
+With a U/P basic security is addressed
+SSL opton to encrypt..  Deends on if this can be automated at install time...
+
+It would be nice to make this a more professional application
+
+
+
+
