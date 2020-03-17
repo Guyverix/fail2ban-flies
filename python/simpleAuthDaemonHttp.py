@@ -90,6 +90,11 @@ class CustomServerHandler(http.server.BaseHTTPRequestHandler):
             postvars = self._parse_POST()
             getvars = self._parse_GET()
 
+# This appears to be the point where we would exec
+# we will have to disable all path and post options
+# this must be as dumb as possible to be secure
+
+
             response = {
                 'path': self.path,
                 'get_vars': str(getvars),
@@ -114,10 +119,6 @@ class CustomServerHandler(http.server.BaseHTTPRequestHandler):
             }
 
             self.wfile.write(bytes(json.dumps(response), 'utf-8'))
-
-# This appears to be the point where we would exec
-# we will have to disable all path and post options
-# this must be as dumb as possible to be secure
 
         response = {
             'path': self.path,
