@@ -27,6 +27,9 @@ SSL opton to encrypt..  Deends on if this can be automated at install time...
 
 It would be nice to make this a more professional application
 
+basic daemon/webserver has auth!
+Now strip it to the minimum and have it exec stuff
+Then put in daemon contols to start and stop it
 
 
 
