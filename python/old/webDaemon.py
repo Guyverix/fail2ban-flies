@@ -1,5 +1,7 @@
-import BaseHTTPServer
-from SimpleHTTPServer import SimpleHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+#import BaseHTTPServer
+#from SimpleHTTPServer import SimpleHTTPRequestHandler
 import sys
 import base64
 
@@ -8,13 +10,13 @@ key = ""
 class AuthHandler(SimpleHTTPRequestHandler):
     ''' Main class to present webpages and authentication. '''
     def do_HEAD(self):
-        print "send header"
+        print ("send header")
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
     def do_AUTHHEAD(self):
-        print "send header"
+        print ("send header")
         self.send_response(401)
         self.send_header('WWW-Authenticate', 'Basic realm=\"Test\"')
         self.send_header('Content-type', 'text/html')
@@ -43,7 +45,7 @@ def test(HandlerClass = AuthHandler,
 
 if __name__ == '__main__':
     if len(sys.argv)<3:
-        print "usage SimpleAuthServer.py [port] [username:password]"
+        print ("usage SimpleAuthServer.py [port] [username:password]")
         sys.exit()
     key = base64.b64encode(sys.argv[2])
     test()
