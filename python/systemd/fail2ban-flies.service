@@ -1,0 +1,15 @@
+[Service]
+SyslogIdentifier=fail2ban-flies
+ExecStart=/opt/fail2ban-flies/python/simpleAuthDaemonHttp.py
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+User=root
+Group=root
+RestartSec=2
+
+[Unit]
+StartLimitInterval=2
+
+[Install]
+WantedBy=multi-user.target
