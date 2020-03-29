@@ -26,8 +26,9 @@ This still needs some work:
 
 Since I am spitballing this, another switch -W (web) will be coded in so that instead of sshing to all the hosts, it will do a web reqeust to a web-server that will make the update to the other machines.  This may make things easier for users where ssh between hosts on a network is problematic and need only a single host  somewhere to do the updates.
 
-Initial commits have been done with the basic logic for the bash script, however it is a save point and nothing has been tested yet.  Logging has been put in place that supports syslog or a local log file.  However the local logfile is using Linux specific vars and will cause Mac's to have heart-burn.  I will alter that later once I have the Linux version working correctly.
+Initial commits have been done with the basic logic for the bash script``, however it is a save point and nothing has been tested yet.``  Logging has been put in place that supports syslog or a local log file.  However the local logfile is using Linux specific vars and will cause Mac's to have heart-burn.  I will alter that later once I have the Linux version working correctly.
 
 The logic is now in place for verification of sshpass existing, as that will be necessary when using a password based login.  I am unsure if Mac's have the same script available but will cross that bridge when I come to it.
 
+### Webserrver specific (not python updater)
 There is a basic web post curl statement using GET as well as a second one for POST.  The intial PHP version will likely only support GET since it is simpler and we are not dealing with sensitive information.
