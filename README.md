@@ -16,12 +16,11 @@ Currently bash is what is called when a ban list needs updating against remote h
 
 > The bash script will require either a password (bad idea, but it is your network) or ssh-keys to be set up.
 
-The sudoers file will need at least a passwordless setting for the fail2ban-client so the user can update the jail.
+> The sudoers file will need at least a passwordless setting for the fail2ban-client so the user can update the jail.
 
 This still needs some work:
-
-Log levels will be set internal to the script or possibly by the cfg file to log to syslog
-
+* Log levels will be set internal to the script or possibly by the cfg file to log to syslog
+* decide if ssh passwords should be used at all
 
 ## TODO (if anyone cares about it)
 
