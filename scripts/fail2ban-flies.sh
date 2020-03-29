@@ -133,7 +133,7 @@ local MESSAGE=${1}
 
    if [[ ${SYSLOG} ]]; then
      LOGGING=$(syslogSeverity "${LOGGING}")
-     logger -t fail2ban-flies -p auth.${LOGGING} "${MESSAGE}"
+     logger -t fail2ban-flies -p daemon.info "[${LOGGING}] ${MESSAGE}"
    else
      # canonicaldirname does NOT work on Mac.  Find a better option
      LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
@@ -150,7 +150,7 @@ beginlog() {
    local LOGGING="INFO"
    if [[ ${SYSLOG} ]]; then
       LOGGING=$(syslogSeverity "${LOGGING}")
-      logger -t fail2ban-flies -p auth.${LOGGING} "${MESSAGE}"
+      logger -t fail2ban-flies -p daemon.info "[${LOGGING}] ${MESSAGE}"
    else
       LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
       touch ${LOGFILE}
@@ -178,7 +178,7 @@ endlog() {
 
   if [[ ${SYSLOG} ]]; then
     LOGGING=$(syslogSeverity "${LOGGING}")
-    logger -t fail2ban-flies -p auth.${LOGGING} "${MESSAGE}"
+    logger -t fail2ban-flies -p daemon.info "[${LOGGING}] ${MESSAGE}"
   else
     LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
     touch ${LOGFILE}
@@ -355,7 +355,7 @@ fi
 
 # Begin logging
 if [[ ${SYSLOG} ]]; then
-  logger -t fail2ban-flies "beginning fail2ban-flies push"
+  logger -t fail2ban-flies -p daemon.info "[info] beginning fail2ban-flies push"
 else
   # beginLog does not take args
   beginLog
@@ -373,7 +373,7 @@ fi
 
 # Update our logs
 if [[ ${SYSLOG} ]]; then
-  logger -t fail2ban-flies "ending fail2ban-flies push"
+  logger -t fail2ban-flies -p daemon.info "[info] ending fail2ban-flies push"
 else
   endLog "ending fail2ban-flies push"
 fi
