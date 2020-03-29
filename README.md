@@ -8,7 +8,7 @@ I am happy with the results so far.  This is a daemon that runs listening on a g
 
 The Python daemon version does not have any discrete logging as fail2ban itself will log bans.  Do not see a reason to duplicate this functionality.  It is important to note that the systemd portion of this DOES log to syslog currently.  I am still trying to decide if I want to keep that or not.  
 
-An example for using the daemon to update a ban list would be calling http://<IP>:<PORT>/?ip=192.168.255.255&ban=banip (and authenticating) from a browser.  From curl the options are kept as simple as possible to keep from causing trouble.  curl --user user:pass http://<IP>:<PORT>/?ip=192.168.255.255&ban=banip
+An example for using the daemon to update a ban list would be calling `http://<IP>:<PORT>/?ip=192.168.255.255&ban=banip` (and authenticating) from a browser.  From curl the options are kept as simple as possible to keep from causing trouble.  `curl --user user:pass http://<IP>:<PORT>/?ip=192.168.255.255&ban=banip`
 
 
 ## BASH:
