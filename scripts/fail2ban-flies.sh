@@ -307,7 +307,7 @@ testHosts() {
 JAIL='recidive'
 CFG="${samedirname}/ipList.cfg"
 WEB='false'
-UNBAN='ban'
+UNBAN='banip'
 USER=$(whoami)
 SYSLOG="true"
 PASS=''
@@ -318,7 +318,7 @@ do
   case ${OPTION} in
     h) usage; exit 0    ;;
     x) export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'; set -x ;;
-    U) UNBAN='unban'       ;;
+    U) UNBAN='unbanip'       ;;
     W) WEB='true'       ;;
     P) PASS="${OPTARG}" ;;
     J) JAIL="${OPTARG}" ;;
