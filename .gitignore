@@ -1,3 +1,4 @@
 logs/*.log
 scripts/ipList.cfg
 scripts/chubbardipList.cfg
+python/__pycache__/
