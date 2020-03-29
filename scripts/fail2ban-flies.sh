@@ -58,6 +58,35 @@ EOF
 #    PARAMETERS:  None.  This is standalone.  Changes occur on case by case
 #       RETURNS:  none
 #===============================================================================
+syslogSeverity() {
+
+# VALID SYSLOG VALUES
+#emerg
+#alert
+#crit
+#err
+#warning
+#notice
+#info
+#debug
+local RAW=$1
+case ${RAW} in
+  DEB*) RET="debug"   ;;
+  INF*) RET="info"    ;;
+  FAT*) RET="emerg"   ;;
+  WAR*) RET="warning" ;;
+  ERR*) RET="err"     ;;
+  *)    RET="debug"   ;;
+esac
+echo "${RET}"
+}
+
+#===  FUNCTION  ================================================================
+#          NAME:  verify_deps
+#   DESCRIPTION:  Check that all binary files are available to be used
+#    PARAMETERS:  None.  This is standalone.  Changes occur on case by case
+#       RETURNS:  none
+#===============================================================================
 verify_deps() {
 if [[ "${AUTH}" != "key" ]] && [[ "${WEB}" != "true" ]];then
   needed="ssh sshpass"
@@ -86,12 +115,13 @@ done
 #       RETURNS:  stdout
 #-------------------------------------------------------------------------------
 local_logger () {
-local MESSAGE=${1}
 # "Message" "ERR, or UOW" "Context id"
+
+local MESSAGE=${1}
    if [ -z ${2} ];then
-      # If there is no var 2, then this is NOT an error or UOW of some kind.
-      local LOGGING="INFO"
-      local CONTEXT1=${RANDOM}
+     # If there is no var 2, then this is NOT an error or UOW of some kind.
+     local LOGGING="INFO"
+     local CONTEXT1=${RANDOM}
    else
       local LOGGING="${2}"
       if [ -z ${3} ];then
@@ -100,46 +130,63 @@ local MESSAGE=${1}
          local CONTEXT1="${3}"
       fi
    fi
-# canonicaldirname does NOT work on Mac.  Find a better option
-LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
-touch ${LOGFILE}
-chmod 664 ${LOGFILE}
 
-local APP_NAME=`echo $0 | awk -F'/' '{print $NF}'`
-#echo "[[\"`date -u +%FT%H:%M:%S`\", \"Event\", \"\", \"${LOGGING}\", \"`hostname`\", \"${APP_NAME}\", \"$$\", \"0\", \"${CONTEXT1}\", ,\"OPS\", \"${APP_NAME}\"], {\"Event\":\"${MESSAGE}\"}]" >> ${LOGFILE}
-echo "\"$(date +%s%N)\": [[\"$(date -u +%FT%H:%M:%S)\", \"${LOGGING}\", \"$(hostname)\", \"${APP_NAME}\", \"$$\", \"${CONTEXT1}\"], {\"Event\":\"${MESSAGE}\"}]," >> ${LOGFILE}
+   if [[ ${SYSLOG} ]]; then
+     LOGGING=$(syslogSeverity "${LOGGING}")
+     logger -t fail2ban-flies -p auth.${LOGGING} "${MESSAGE}"
+   else
+     # canonicaldirname does NOT work on Mac.  Find a better option
+     LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
+     touch ${LOGFILE}
+     chmod 664 ${LOGFILE}
+
+     local APP_NAME=`echo $0 | awk -F'/' '{print $NF}'`
+     echo "\"$(date +%s%N)\": [[\"$(date -u +%FT%H:%M:%S)\", \"${LOGGING}\", \"$(hostname)\", \"${APP_NAME}\", \"$$\", \"${CONTEXT1}\"], {\"Event\":\"${MESSAGE}\"}]," >> ${LOGFILE}
+   fi
 }
 
 # Begin the log file so JSON is vaild
 beginlog() {
-LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
-touch ${LOGFILE}
-chmod 664 ${LOGFILE}
-echo '{' >> ${LOGFILE}
+   local LOGGING="INFO"
+   if [[ ${SYSLOG} ]]; then
+      LOGGING=$(syslogSeverity "${LOGGING}")
+      logger -t fail2ban-flies -p auth.${LOGGING} "${MESSAGE}"
+   else
+      LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
+      touch ${LOGFILE}
+      chmod 664 ${LOGFILE}
+      echo '{' >> ${LOGFILE}
+   fi
 }
 
 # Close the JSON properly
 endlog() {
-LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
-touch ${LOGFILE}
-chmod 664 ${LOGFILE}
-local MESSAGE=${1}
-# "Message" "ERR, or UOW" "Context id"
-   if [ -z ${2} ];then
-      # If there is no var 2, then this is NOT an error or UOW of some kind.
-      local LOGGING="INFO"
+  local MESSAGE=${1}
+  # "Message" "ERR, or UOW" "Context id"
+  if [ -z ${2} ];then
+    # If there is no var 2, then this is NOT an error or UOW of some kind.
+    local LOGGING="INFO"
+    local CONTEXT1=${RANDOM}
+  else
+    local LOGGING="${2}"
+    if [ -z ${3} ];then
       local CONTEXT1=${RANDOM}
-   else
-      local LOGGING="${2}"
-      if [ -z ${3} ];then
-         local CONTEXT1=${RANDOM}
-      else
-         local CONTEXT1="${3}"
-      fi
-   fi
-   local APP_NAME=`echo $0 | awk -F'/' '{print $NF}'`
-   echo "\"$(date +%s%N)\": [[\"$(date -u +%FT%H:%M:%S)\", \"${LOGGING}\", \"$(hostname)\", \"${APP_NAME}\", \"$$\", \"${CONTEXT1}\"], {\"Event\":\"${MESSAGE}\"}]" >> ${LOGFILE}
-   echo '}' >> ${LOGFILE}
+    else
+      local CONTEXT1="${3}"
+    fi
+  fi
+
+  if [[ ${SYSLOG} ]]; then
+    LOGGING=$(syslogSeverity "${LOGGING}")
+    logger -t fail2ban-flies -p auth.${LOGGING} "${MESSAGE}"
+  else
+    LOGFILE="${canonicaldirname}/logs/`date +%F`_fail2ban-flies.log"
+    touch ${LOGFILE}
+    chmod 664 ${LOGFILE}
+    local APP_NAME=`echo $0 | awk -F'/' '{print $NF}'`
+    echo "\"$(date +%s%N)\": [[\"$(date -u +%FT%H:%M:%S)\", \"${LOGGING}\", \"$(hostname)\", \"${APP_NAME}\", \"$$\", \"${CONTEXT1}\"], {\"Event\":\"${MESSAGE}\"}]" >> ${LOGFILE}
+    echo '}' >> ${LOGFILE}
+  fi
 }
 
 # Fatal errors follow the endlog function
@@ -156,26 +203,28 @@ endlog $[@]
 webPush () {
 # This will end up in cfg file later
 local VERS='get'
-if [[ ${UNBAN} = un ]];then
-  local DEBAN='true'
-else
-  local DEBAN='false'
-fi
 
-if [[ ${VERS} == "get" ]];then
-  # GET VERSION
-  local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -s -L "${WEB}?jail=${JAIL}&ip=${IP}&unban=${DEBAN}")
-else
-  # POST VERSION
-  local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"unban\": \"${DEBAN}\"}" ${HOOK_URL})
-fi
-# Log the results of our work
-if [[ $? -gt 0 ]]; then
-  if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "${WEB_PUSH}" ; else local_logger "${WEB_PUSH}" "ERROR" ; fi
-else
-  if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Pushed to webhost successfully" ; else local_logger "Pushed to webhost successfully" "DEBUG" ; fi
-fi
+#PORT = 3333
+#USERNAME='changeme'
+#USERPASS='test'
 
+
+for REMOTE in ${REMOTE_IP} ; do
+  if [[ ${VERS} == "get" ]];then
+    # GET VERSION
+    local WEB_PUSH=$(curl -u ${USERNAME}:${USERPASS} --connect-timeout 2 --max-time 25 -s -L "http://${REMODE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" -s -o /dev/null -w "%{http_code}" )
+  else
+    # POST VERSION
+    local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"ban\": \"${UNBAN}\"}" -s -o /dev/null -w "%{http_code}")
+  fi
+
+  # Log the results of our work
+  if [[ $? -gt 0 ]]; then
+    local_logger "${WEB_PUSH}" "ERROR"
+  else
+    local_logger "Pushed to webhost successfully" "DEBUG"
+  fi
+done
 }
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -193,11 +242,11 @@ hostSsh() {
         local_logger "Status found local IP address match between ${REMOTE} and ${LOCALIP}.  Ignoring this update" "DEBUG"
       else
         local_logger "Using address ${REMOTE}" "DEBUG"
-        SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
+        SSH=$(ssh -o StrictHostKeyChecking=no -i ${KEY} ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN} ${IP}")
         if [[ $(echo "${SSH}" | grep -c "NOK\|Sorry") -gt 0 ]]; then
-          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "FAILURE: ${SSH} remote: ${REMOTE}" ; else local_logger "FAILURE: ${SSH} remote: ${REMOTE}" "ERROR" ; fi
+          local_logger "FAILURE: ${SSH} remote: ${REMOTE}" "ERROR"
         else
-          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfully to ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
+          local_logger "Updated ${REMOTE} host successfully to ${UNBAN} IP ${IP}" "DEBUG"
         fi
       fi
     done
@@ -208,11 +257,11 @@ hostSsh() {
         local_logger "Status found local IP address match between ${REMOTE} and ${LOCALIP}.  Ignoring this update" "DEBUG"
       else
         local_logger "Using address ${REMOTE}" "DEBUG"
-        SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN}banip ${IP}")
+        SSH=$(sshpass -p "${PASS}" ssh -o StrictHostKeyChecking=no ${USER}@${REMOTE} "sudo fail2ban-client set ${JAIL} ${UNBAN} ${IP}")
         if [[ $(echo "${SSH}" | grep -c "NOK\|Sorry") -gt 0 ]]; then
-          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "FAILURE: ${SSH} remote: ${REMOTE}" ; else local_logger "FAILURE: ${SSH} remote: ${REMOTE}" "ERROR" ; fi
+          local_logger "FAILURE: ${SSH} remote: ${REMOTE}" "ERROR"
         else
-          if [[ ${SYSLOG} ]]; then logger -t fail2ban-flies "Updated ${REMOTE} successfullyto ${UNBAN}ban IP ${IP}" ; else local_logger "Updated ${REMOTE} host successfully to ${UNBAN}ban IP ${IP}" "DEBUG" ; fi
+          local_logger "Updated ${REMOTE} host successfully to ${UNBAN} IP ${IP}" "DEBUG"
         fi
       fi
     done
@@ -258,7 +307,7 @@ testHosts() {
 JAIL='recidive'
 CFG="${samedirname}/ipList.cfg"
 WEB='false'
-UNBAN=''
+UNBAN='ban'
 USER=$(whoami)
 SYSLOG="true"
 PASS=''
@@ -269,7 +318,7 @@ do
   case ${OPTION} in
     h) usage; exit 0    ;;
     x) export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'; set -x ;;
-    U) UNBAN='un'       ;;
+    U) UNBAN='unban'       ;;
     W) WEB='true'       ;;
     P) PASS="${OPTARG}" ;;
     J) JAIL="${OPTARG}" ;;
