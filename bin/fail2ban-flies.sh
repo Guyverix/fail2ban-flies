@@ -305,7 +305,7 @@ testHosts() {
 # Set sane defaults
 #JAIL='fail2ban-flies'
 JAIL='recidive'
-CFG="${samedirname}/ipList.cfg"
+CFG="${canonicaldirname}/conf/config.py"
 WEB='false'
 UNBAN='banip'
 USER=$(whoami)

@@ -8,16 +8,11 @@ import os
 import subprocess
 from urllib.parse import urlparse, parse_qs
 
-# This is our config file
-# parsable via bash OR python
-# USE CAUTION
-
-from webserver import *
-
-# Set our variables here
-PORT = 3333
-USERNAME='changeme'
-USERPASS='test'
+# Hard set our variables here for the config file
+import sys
+lib_path = os.path.abspath(os.path.join(__file__, '..','../conf'))
+sys.path.append(lib_path)
+from config import *
 
 class CustomServerHandler(http.server.BaseHTTPRequestHandler):
 
@@ -47,11 +42,6 @@ class CustomServerHandler(http.server.BaseHTTPRequestHandler):
 
             self.wfile.write(bytes(json.dumps(response), 'utf-8'))
 
-#       This is where the majority of the logic resides
-#       Do not allow slop.  Either we have EXACTLY what we need
-#       or defaults cover it.  Do not allow for easily
-#       exploitable weaknesses
-
         elif self.headers.get('Authorization') == 'Basic ' + str(key):
             getvars = self._parse_GET()
             keys = getvars.keys()
@@ -62,7 +52,7 @@ class CustomServerHandler(http.server.BaseHTTPRequestHandler):
                 jailList = getvars.get('jail')
                 httpJail = ''.join(jailList)
             except:
-                httpJail = str(jail)
+                httpJail = str(JAIL)
 
             try:
                 banList = getvars.get('ban')
@@ -104,7 +94,6 @@ class CustomServerHandler(http.server.BaseHTTPRequestHandler):
                 runUpdate = subprocess.Popen(command,shell=True, stdout=subprocess.PIPE)
                 (runUpdateOutput, err) = runUpdate.communicate()
                 runUpdate_status = runUpdate.wait()
-#                if ( (runUpdate_status == "255") and ("is not banned" not in runUpdateOutput)):
                 if ( "is not banned" in str(runUpdateOutput)):
                     self.send_response(200)
                     self.send_header('Content-type', 'application/json')
@@ -128,20 +117,6 @@ class CustomServerHandler(http.server.BaseHTTPRequestHandler):
                     'result': str(result),
                     'reason': str(reason),
                     'ip': str(httpIp)
-#                    'path': self.path,
-#                    'get_vars': str(getvars),
-#                    'conf_default_ban': str(ban),
-#                    'conf_default_jail': str(jail),
-#                    'conf_default_PORT': str(PORT),
-#                    'conf_default_USERNAME': str(USERNAME),
-#                    'conf_default_USERPASS': str(USERPASS),
-#                    'os_command': str(command),
-#                    'subprocess_command': str(command),
-#                    'subprocess_status': str(runUpdate_status),
-#                    'subprocess_output': str(runUpdateOutput),
-#                    'keys': str(keys),
-#                    'values': str(values),
-#                    'runUpdate': str(runUpdate)
                 }
                 self.wfile.write(bytes(json.dumps(response), 'utf-8'))
             elif (failed == 'true'):
@@ -184,9 +159,18 @@ class CustomHTTPServer(http.server.HTTPServer):
 
 
 if __name__ == '__main__':
-    server = CustomHTTPServer( ('', PORT))
-    server.set_auth(USERNAME, USERPASS)
-    server.serve_forever()
+    if ( SSL == "true" ):
+        import ssl
+        server = CustomHTTPServer(('', PORT))
+        server.set_auth(USERNAME, USERPASS)
+        server.socket = ssl.wrap_socket (server.socket,
+        keyfile="/etc/ssl/private/ssl-cert-snakeoil.key", 
+        certfile='/etc/ssl/certs/ssl-cert-snakeoil.pem', server_side=True)
+        server.serve_forever()
+    else:
+        server = CustomHTTPServer( ('', PORT))
+        server.set_auth(USERNAME, USERPASS)
+        server.serve_forever()
 
     import time
     import systemd.daemon
