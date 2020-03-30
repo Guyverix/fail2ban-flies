@@ -37,7 +37,7 @@ Options:
 -J  Jail name we are working with
 -I  IP address we are working with
 -U  Unban an IP from Jail
--W  Run in HTTP mode
+-W  Run in ssh mode
 -C  Config file we are using (if not ./ipList.cfg)
 -P  Password passed via commandline *(not a good idea kids)
 -S  disable using syslog
@@ -212,7 +212,7 @@ local VERS='get'
 for REMOTE in ${REMOTE_IP} ; do
   if [[ ${VERS} == "get" ]];then
     # GET VERSION
-    local WEB_PUSH=$(curl -u ${USERNAME}:${USERPASS} --connect-timeout 2 --max-time 25 -s -L "http://${REMODE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" -s -o /dev/null -w "%{http_code}" )
+    local WEB_PUSH=$(curl -u ${USERNAME}:${USERPASS} --connect-timeout 2 --max-time 25 -s -L "http://${REMOTE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" -s -o /dev/null -w "%{http_code}" )
   else
     # POST VERSION
     local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"ban\": \"${UNBAN}\"}" -s -o /dev/null -w "%{http_code}")
@@ -220,9 +220,9 @@ for REMOTE in ${REMOTE_IP} ; do
 
   # Log the results of our work
   if [[ $? -gt 0 ]]; then
-    local_logger "${WEB_PUSH}" "ERROR"
+    local_logger "${WEB_PUSH} ${REMOTE}" "ERROR"
   else
-    local_logger "Pushed to webhost successfully" "DEBUG"
+    local_logger "Pushed to webhost ${REMOTE} successfully" "DEBUG"
   fi
 done
 }
@@ -306,7 +306,7 @@ testHosts() {
 #JAIL='fail2ban-flies'
 JAIL='recidive'
 CFG="${canonicaldirname}/conf/config.py"
-WEB='false'
+WEB='true'
 UNBAN='banip'
 USER=$(whoami)
 SYSLOG="true"
@@ -319,7 +319,7 @@ do
     h) usage; exit 0    ;;
     x) export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'; set -x ;;
     U) UNBAN='unbanip'       ;;
-    W) WEB='true'       ;;
+    W) WEB='false'       ;;
     P) PASS="${OPTARG}" ;;
     J) JAIL="${OPTARG}" ;;
     I) IP="${OPTARG}"   ;;
