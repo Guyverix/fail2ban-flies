@@ -27,13 +27,13 @@ if [[ ${SANITY} -ne 0 ]];then
   echo ""; echo ""
   echo "I see that fail2ban-flies is already installed."
   echo "Oops.  I am not screwing up an installation"
-  exit 0
+#  exit 0
 fi
 
 echo "Installing action.d file"
 cp ../fail2ban/action.d/fail2ban-flies.conf /etc/fail2ban/action.d/
 # Create root path var and set it in the action file
-ROOT_DIR=$(echo "${canonicaldirname}" | sed 's|/..||g')
+ROOT_DIR=$(echo "${canonicaldirname}" | sed 's|conf/\.\.||g')
 echo "Update new action filter with pathing"
 sed -i -- "s|CHANGEME|${ROOT_DIR}|g" /etc/fail2ban/action.d/fail2ban-flies.conf
 
@@ -62,7 +62,7 @@ CHECK=$(fail2ban-client status | grep -c "fail2ban-flies")
 if [[ ${CHECK} -lt 1 ]]; then
   echo "Appears that new jail was not installed properly"
   echo "Attempting daemon reload"
-  sudo service fail2ban reload
+  service fail2ban reload
   CHECK=$(fail2ban-client status | grep -c "fail2ban-flies")
   if [[ ${CHECK} -lt 1 ]]; then
     echo "Appears that new jail was not installed properly"
@@ -79,8 +79,9 @@ else
   echo "fail2ban-flies jail is updated"
 fi
 
+echo "ROOT ${ROOT_DIR}"
 echo "Installing systemd daemon"
-cat ./fail2ban-flies.systemd | sed  "s|/opt/CHANGEME|${ROOT_DIR}|g" > /etc/systemd/system/fail2ban-flies.systemd
+cat ${canonicaldirname}/conf/fail2ban-flies.service | sed  "s|CHANGEME|${ROOT_DIR}|g" > /etc/systemd/system/fail2ban-flies.service
 
 echo "systemctl reload"
 systemctl reload
