@@ -214,11 +214,20 @@ for REMOTE in ${REMOTE_IP} ; do
     local_logger "Status found local IP address match between ${REMOTE} and ${LOCALIP}.  Ignoring this update" "DEBUG"
   else
     if [[ ${VERS} == "get" ]];then
-      # GET VERSION
-      local WEB_PUSH=$(curl -u ${USERNAME}:${USERPASS} --connect-timeout 2 --max-time 25 -s -L "http://${REMOTE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" -s -o /dev/null -w "%{http_code}" )
+      if [[ "${SSL}" == "true" ]];then
+        # GET VERSION
+        local WEB_PUSH=$(curl -u ${USERNAME}:${USERPASS} --connect-timeout 2 --max-time 25 -s -L "https://${REMOTE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" -s -o /dev/null -w "%{http_code}" )
+      else
+        local WEB_PUSH=$(curl -u ${USERNAME}:${USERPASS} --connect-timeout 2 --max-time 25 -s -L "http://${REMOTE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" -s -o /dev/null -w "%{http_code}" )
+      fi
     else
-      # POST VERSION
-      local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"ban\": \"${UNBAN}\"}" -s -o /dev/null -w "%{http_code}")
+      if [[ "${SSL}" == "true" ]];then
+        # POST VERSION
+        local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"ban\": \"${UNBAN}\"}" -s -o /dev/null -w "%{http_code}" -L "https://${REMOTE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" )
+      else
+        # POST VERSION
+        local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"ban\": \"${UNBAN}\"}" -s -o /dev/null -w "%{http_code}" -L "https://${REMOTE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}")
+      fi
     fi
 
     # Log the results of our work
@@ -367,7 +376,7 @@ else
 fi
 
 # Decide what we are going to update
-if [[ "${WEB}" = "true" ]];then
+if [[ "${WEB}" == "true" ]];then
   local_logger "fail2ban-flies using web services" "DEBUG"
   webPush
 else

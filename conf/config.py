@@ -13,6 +13,7 @@ REMOTE_IP="192.168.15.74 192.168.15.131 192.168.15.176 192.168.15.58 192.168.15.
 # shared vars
 # default jail if not explicitly given 
 JAIL='fail2ban-flies'
+SSL='false'
 
 # python daemon vars (RX)
 # default action if not told otherwise
@@ -26,7 +27,6 @@ USERNAME='changeme'
 USERPASS='test'
 
 # Server settings if SSL is to be supported
-SSL='false'
 CERT='/etc/ssl/certs/ssl-cert-snakeoil.pem'
 SSLKEY='/etc/ssl/private/ssl-cert-snakeoil.key'
 PYTHONDONTWRITEBYTECODE=1
