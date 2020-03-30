@@ -210,19 +210,23 @@ local VERS='get'
 
 
 for REMOTE in ${REMOTE_IP} ; do
-  if [[ ${VERS} == "get" ]];then
-    # GET VERSION
-    local WEB_PUSH=$(curl -u ${USERNAME}:${USERPASS} --connect-timeout 2 --max-time 25 -s -L "http://${REMOTE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" -s -o /dev/null -w "%{http_code}" )
+  if [[ "${LOCALIP}" =~ ${REMOTE} ]]; then
+    local_logger "Status found local IP address match between ${REMOTE} and ${LOCALIP}.  Ignoring this update" "DEBUG"
   else
-    # POST VERSION
-    local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"ban\": \"${UNBAN}\"}" -s -o /dev/null -w "%{http_code}")
-  fi
+    if [[ ${VERS} == "get" ]];then
+      # GET VERSION
+      local WEB_PUSH=$(curl -u ${USERNAME}:${USERPASS} --connect-timeout 2 --max-time 25 -s -L "http://${REMOTE}:${PORT}/?jail=${JAIL}&ip=${IP}&ban=${UNBAN}" -s -o /dev/null -w "%{http_code}" )
+    else
+      # POST VERSION
+      local WEB_PUSH=$(curl --connect-timeout 2 --max-time 5 -X POST --data-urlencode "payload={\"jail\": \"${JAIL}\", \"ip\": \"${IP}\", \"ban\": \"${UNBAN}\"}" -s -o /dev/null -w "%{http_code}")
+    fi
 
-  # Log the results of our work
-  if [[ $? -gt 0 ]]; then
-    local_logger "${WEB_PUSH} ${REMOTE}" "ERROR"
-  else
-    local_logger "Pushed to webhost ${REMOTE} successfully" "DEBUG"
+    # Log the results of our work
+    if [[ $? -gt 0 ]]; then
+      local_logger "${WEB_PUSH} ${REMOTE}" "ERROR"
+    else
+      local_logger "Pushed to webhost ${REMOTE} successfully" "DEBUG"
+    fi
   fi
 done
 }
