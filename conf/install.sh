@@ -84,7 +84,7 @@ echo "Installing systemd daemon"
 cat ${canonicaldirname}/conf/fail2ban-flies.service | sed  "s|CHANGEME|${ROOT_DIR}|g" > /etc/systemd/system/fail2ban-flies.service
 
 echo "systemctl reload"
-systemctl reload
+systemctl daemon-reload
 
 echo "systemctl enable"
 systemctl enable fail2ban-flies
