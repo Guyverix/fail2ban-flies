@@ -1,6 +1,6 @@
 [Service]
 SyslogIdentifier=fail2ban-flies
-ExecStart=/opt/fail2ban-flies/python/simpleAuthDaemonHttp.py
+ExecStart=CHANGEME/python/simpleAuthDaemonHttp.py
 Restart=always
 StandardOutput=syslog
 StandardError=syslog

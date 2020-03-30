@@ -35,7 +35,7 @@ cp ../fail2ban/action.d/fail2ban-flies.conf /etc/fail2ban/action.d/
 # Create root path var and set it in the action file
 ROOT_DIR=$(echo "${canonicaldirname}" | sed 's|/..||g')
 echo "Update new action filter with pathing"
-sed -i -- "s|/opt/fail2ban-flies|${ROOT_DIR}|" /etc/fail2ban/action.d/fail2ban-flies.conf
+sed -i -- "s|CHANGEME|${ROOT_DIR}|g" /etc/fail2ban/action.d/fail2ban-flies.conf
 
 echo "Installing filter.d file"
 echo "NOTE: This is not needed currently.  Stub file only"
@@ -80,7 +80,7 @@ else
 fi
 
 echo "Installing systemd daemon"
-cat ./fail2ban-flies.systemd | sed  "s|/opt/fail2ban-flies|${ROOT_DIR}|g" > /etc/systemd/system/fail2ban-flies.systemd
+cat ./fail2ban-flies.systemd | sed  "s|/opt/CHANGEME|${ROOT_DIR}|g" > /etc/systemd/system/fail2ban-flies.systemd
 
 echo "systemctl reload"
 systemctl reload
