@@ -30,6 +30,9 @@ if [[ ${SANITY} -ne 0 ]];then
 #  exit 0
 fi
 
+echo "Touching the fail2ban log files
+touch /var/log/fail2ban-flies.log
+
 echo "Installing action.d file"
 cp ../fail2ban/action.d/fail2ban-flies.conf /etc/fail2ban/action.d/
 # Create root path var and set it in the action file
